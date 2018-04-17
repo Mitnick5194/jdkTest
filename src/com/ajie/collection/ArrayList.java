@@ -1,6 +1,7 @@
 package com.ajie.collection;
 
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -166,7 +167,7 @@ public class ArrayList<E> implements List<E>, Serializable {
 	public boolean add(int i, E e) {
 		rangeCheckForAdd(i);
 		ensureCapacityInternal(size + 1);
-		System.arraycopy(elementData,i , elementData, i+1, size-i);
+		System.arraycopy(elementData, i, elementData, i + 1, size - i);
 		elementData[i] = e;
 		size++;
 		return true;
@@ -174,25 +175,69 @@ public class ArrayList<E> implements List<E>, Serializable {
 
 	@Override
 	public boolean addAll(Collection<? extends E> c) {
-		// TODO Auto-generated method stub
-		return false;
+		// 需要将c转换成object[]
+		Object[] array = c.toArray(); // c的实现是当前的arraylist类型 所以需要先实现toArray方法
+		int len = array.length;
+		ensureCapacityInternal(size + len);
+		System.arraycopy(array, 0, elementData, size, len);
+		size += len;
+		// 如果c转换为数组后的长度不为0 返回true
+		return len != 0;
 	}
 
+	/**
+	 * 参考了jdk 将需要删除的元素后面的元素整体向前移动一位 达到覆盖了该元素的目的
+	 * 
+	 * 最后还需要将最后的元素置为 null 有利于gc回收
+	 */
 	@Override
 	public E remove(int i) {
-		// TODO Auto-generated method stub
-		return null;
+		rangeCheck(i);
+		E old = get(i);
+		// 计算出删除元素后面的元素个数
+		int moveNum = size - i - 1;
+		if (moveNum > 0) // 如果删除的是最后一个 没必要做下步操作
+			System.arraycopy(elementData, i + 1, elementData, i, moveNum);
+		elementData[--size] = null;
+		modCount++;
+		return old;
 	}
 
+	/**
+	 * 注释了的是我的做法 没有考虑到null的情况 虽然也可以 但是总感觉不好 也说不上哪里不好
+	 */
 	@Override
 	public boolean remove(Object o) {
-		// TODO Auto-generated method stub
+		/*for (int i = 0; i < size; i++) {
+			Object obj = get(i);
+			if (o == obj) {
+				remove(i);
+				return true;
+			}
+		}*/
+		if (null == o) {
+			for (int i = 0; i < size; i++) {
+				if (null == elementData[i]) {
+					// jdk这里不是调用这个方法 而是单独的一个方法fastRemove() 感觉没这个必要
+					// 直接调用remove(i)就好了
+					remove(i);
+					return true;
+				}
+			}
+		} else {
+			for (int i = 0; i < size; i++) {
+				if (o == elementData[i]) {
+					remove(i);
+					return true;
+				}
+			}
+		}
 		return false;
 	}
 
 	@Override
 	public boolean removeAll(Collection<?> c) {
-		// TODO Auto-generated method stub
+		Object[] array = c.toArray();
 		return false;
 	}
 
@@ -239,8 +284,10 @@ public class ArrayList<E> implements List<E>, Serializable {
 
 	@Override
 	public Object[] toArray() {
-		// TODO Auto-generated method stub
-		return null;
+		// 我的做法 这个做法不好 因为在调用elementData.length时 会返回这个值的长度 而不是size 在一定成都上造成内存浪费
+		// return elementData;
+		// jdk做法
+		return Arrays.copyOf(elementData, size);
 	}
 
 	@Override
@@ -264,9 +311,9 @@ public class ArrayList<E> implements List<E>, Serializable {
 		if (i < 0 || i >= elementData.length)
 			throw new IndexOutOfBoundsException("下标越界：" + i);
 	}
-	
+
 	/**
-	 * 检查下标是否合法 用于添加时校验 和rangeCheck区别在与添加时下标可以是length 
+	 * 检查下标是否合法 用于添加时校验 和rangeCheck区别在与添加时下标可以是length
 	 * 
 	 * @param i
 	 */
@@ -275,9 +322,9 @@ public class ArrayList<E> implements List<E>, Serializable {
 			throw new IndexOutOfBoundsException("下标越界：" + i);
 	}
 
-
 	/**
-	 * 检查或改变集合的大小
+	 * 检查或改变集合的大小 调用这个方法的方法最终都会调用ensureExplicitCapacity方法 ensureExplicitCapacity
+	 * ensureExplicitCapacity方法里有modCount 所以调用了这个方法的方法都不需要modCount++了
 	 * 
 	 * @param i
 	 */
@@ -324,12 +371,26 @@ public class ArrayList<E> implements List<E>, Serializable {
 		list.add("l");
 		list.add("l");
 		list.add("o");
-		
-		list.add(2, "j");
-		
+		list.add(null);
+		list.remove("h");
 		for (int i = 0, len = list.size(); i < len; i++) {
 			System.out.println(list.get(i));
 		}
-		
+		/*	list.add(2, "j");
+
+		for (int i = 0, len = list.size(); i < len; i++) {
+			System.out.println(list.get(i));
+		}
+		System.out.println("============================");
+		ArrayList<String> list2 = new ArrayList<String>();
+		list2.add("1");
+		list2.add("2");
+		list2.add("3");
+		list.addAll(list2);
+		list2.add("5");
+		for (int i = 0; i < list.size(); i++) {
+			System.out.println(list.get(i));
+		}*/
+
 	}
 }
