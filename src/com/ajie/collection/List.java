@@ -17,9 +17,9 @@ public interface List<E> extends Collection<E> {
 	boolean remove(Object o);
 	boolean removeAll(Collection<?> c);
 	E update(int i , E e);
-	boolean contain(Object o);
-	boolean containAll(Collection<? extends E> c);
-	void clean();
+	boolean contains(Object o);
+	boolean containsAll(Collection<?> c);
+	void clear();
 	boolean isEmpty();
 	List<E> subList(int fromIndex , int toIndex);
 	boolean retainAll(Collection<?> c);

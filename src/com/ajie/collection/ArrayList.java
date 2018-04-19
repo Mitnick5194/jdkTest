@@ -1,7 +1,6 @@
 package com.ajie.collection;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -75,17 +74,6 @@ public class ArrayList<E> implements List<E>, Serializable {
 	}
 
 	/**
-	 * 集合是否包含对象
-	 * 
-	 * @param o
-	 * @return
-	 */
-	@Override
-	public boolean contains(Object o) {
-		return indexOf(o) >= 0;
-	}
-
-	/**
 	 * 迭代器
 	 * 
 	 * @return
@@ -96,26 +84,37 @@ public class ArrayList<E> implements List<E>, Serializable {
 		return null;
 	}
 
+	/**
+	 * 集合是否包含对象
+	 * 
+	 * @param o
+	 * @return
+	 */
+	@Override
+	public boolean contains(Object o) {
+		return indexOf(o) >= 0;
+	}
+
 	@Override
 	public boolean containsAll(Collection<?> c) {
-		// 我的写法
-		if (null == c) {
-			return false;
-		}
-		Iterator<?> iterator = c.iterator();
-		while (iterator.hasNext()) {
-			Object next = iterator.next();
-			if (!contain(next)) {
+		// 我的写法 使用jdk的写法吧 不要整天抱着个迭代器 效率低知道吗
+		/*	if (null == c) {
 				return false;
 			}
-		}
-		return true;
+			Iterator<?> iterator = c.iterator();
+			while (iterator.hasNext()) {
+				Object next = iterator.next();
+				if (!contains(next)) {
+					return false;
+				}
+			}
+			return true;*/
 		// jdk写法 不会判断c是否为空或null如果是 抛空指针异常
-		/*for (Object object : c) {
-			if (!contain(object))
+		for (Object object : c) {
+			if (!contains(object))
 				return false;
 		}
-		return true;*/
+		return true;
 	}
 
 	@Override
@@ -219,7 +218,7 @@ public class ArrayList<E> implements List<E>, Serializable {
 			for (int i = 0; i < size; i++) {
 				if (null == elementData[i]) {
 					// jdk这里不是调用这个方法 而是单独的一个方法fastRemove() 感觉没这个必要
-					// 直接调用remove(i)就好了
+					// 直接调用remove(i)就好啦
 					remove(i);
 					return true;
 				}
@@ -238,31 +237,23 @@ public class ArrayList<E> implements List<E>, Serializable {
 	@Override
 	public boolean removeAll(Collection<?> c) {
 		Object[] array = c.toArray();
-		return false;
+		boolean iscontain = false;
+		for (int i = 0, len = array.length; i < len; i++) {
+			Object o = array[i];
+			if (contains(o)) {
+				remove(i);
+				iscontain = true;
+			}
+		}
+		return iscontain;
 	}
 
 	@Override
 	public E update(int i, E e) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean contain(Object o) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean containAll(Collection<? extends E> c) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public void clean() {
-		// TODO Auto-generated method stub
-
+		rangeCheck(i);
+		E old = get(i);
+		elementData[i] = e;
+		return old;
 	}
 
 	@Override
@@ -270,10 +261,27 @@ public class ArrayList<E> implements List<E>, Serializable {
 		return size == 0;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public List<E> subList(int fromIndex, int toIndex) {
-		// TODO Auto-generated method stub
-		return null;
+		rangeCheckForSubList(fromIndex, toIndex);
+		rangeCheck(toIndex);
+		Object[] cpobject = Arrays.copyOfRange(elementData, fromIndex, toIndex);
+		ArrayList<Object> arr = new ArrayList<Object>(cpobject.length);
+		for (Object object : cpobject) {
+			arr.add(object);
+		}
+		return (List<E>) arr;
+	}
+
+	public void rangeCheckForSubList(int fromIndex, int toIndex) {
+		if (fromIndex < 0)
+			throw new IndexOutOfBoundsException("fromIndex => " + fromIndex);
+		if (toIndex >= size)
+			throw new IndexOutOfBoundsException("toIndex >= " + toIndex);
+		if (fromIndex > toIndex)
+			throw new IllegalArgumentException("fromIndex > toIndex fromIndex=>" + fromIndex
+					+ " toIndex=>" + toIndex);
 	}
 
 	@Override
@@ -290,16 +298,39 @@ public class ArrayList<E> implements List<E>, Serializable {
 		return Arrays.copyOf(elementData, size);
 	}
 
+	/**
+	 * 参考了jdk实现
+	 * 
+	 * 
+	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T[] toArray(T[] a) {
-		// TODO Auto-generated method stub
-		return null;
+		if (a.length < size)
+			return (T[]) Arrays.copyOf(elementData, size, a.getClass());
+		System.arraycopy(elementData, 0, a, 0, size);
+		if (a.length > size) {
+			// 这一步不明白 为什么需要将a[size]置为null 上面的arraycopy返回size-1以后不都是null了吗
+			a[size] = null;
+		}
+		return a;
 	}
 
 	@Override
 	public int indexOf(Object o) {
-		// TODO Auto-generated method stub
-		return 0;
+		if (null == o) {
+			for (int i = 0; i < size; i++) {
+				if (null == elementData[i]) {
+					return i;
+				}
+			}
+		}
+		for (int i = 0; i < size; i++) {
+			if (o.equals(elementData[i])) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	/**
@@ -366,21 +397,31 @@ public class ArrayList<E> implements List<E>, Serializable {
 
 	public static void main(String[] args) {
 		ArrayList<String> list = new ArrayList<String>();
+		ArrayList<Integer> list2 = new ArrayList<Integer>();
+		list2.add(1);
+		list2.add(2);
+		list2.add(3);
 		list.add("h");
 		list.add("e");
 		list.add("l");
 		list.add("l");
 		list.add("o");
-		list.add(null);
-		list.remove("h");
+		list.add("1");
+		// list.add(null);
+		// list.remove("h");
+		list.removeAll(list2);
 		for (int i = 0, len = list.size(); i < len; i++) {
 			System.out.println(list.get(i));
 		}
-		/*	list.add(2, "j");
+		System.out.println("o的下标为：" + list.indexOf("o"));
 
-		for (int i = 0, len = list.size(); i < len; i++) {
-			System.out.println(list.get(i));
+		System.out.println("=================截取==================");
+		List<String> subList = list.subList(2, 3);
+		for (int i = 0; i < subList.size(); i++) {
+			System.out.println(subList.get(i));
 		}
+
+		/*	list.add(2, "j");
 		System.out.println("============================");
 		ArrayList<String> list2 = new ArrayList<String>();
 		list2.add("1");
