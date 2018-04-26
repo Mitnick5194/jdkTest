@@ -3,7 +3,9 @@ package com.ajie.collection;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * @author niezhenjie
@@ -80,8 +82,7 @@ public class ArrayList<E> implements List<E>, Serializable {
 	 */
 	@Override
 	public Iterator<E> iterator() {
-		// TODO Auto-generated method stub
-		return null;
+		return new ListItr();
 	}
 
 	/**
@@ -396,42 +397,91 @@ public class ArrayList<E> implements List<E>, Serializable {
 	}
 
 	public static void main(String[] args) {
-		ArrayList<String> list = new ArrayList<String>();
-		ArrayList<Integer> list2 = new ArrayList<Integer>();
-		list2.add(1);
-		list2.add(2);
-		list2.add(3);
-		list.add("h");
-		list.add("e");
-		list.add("l");
-		list.add("l");
-		list.add("o");
-		list.add("1");
-		// list.add(null);
-		// list.remove("h");
-		list.removeAll(list2);
-		for (int i = 0, len = list.size(); i < len; i++) {
-			System.out.println(list.get(i));
+		/*	ArrayList<String> list = new ArrayList<String>();
+			list.add("h");
+			list.add("e");
+			list.add("l");
+			list.add("l");
+			Iterator<String> it = list.iterator();
+			String s1 = it.next();
+			String s2 = it.next();
+			String s3 = it.next();
+			System.out.println(s1 + "  " + s2 + "  " + s3+"  "+list.size());
+			while(it.hasNext()){
+				it.next();
+				it.remove();
+			}
+			System.out.println(list.size());*/
+		java.util.ArrayList<String> arr = new java.util.ArrayList<String>();
+		arr.add("1");
+		arr.add("2");
+		arr.add("3");
+		Iterator<String> iterator = arr.iterator();
+		while (iterator.hasNext()) {
+			iterator.remove();
 		}
-		System.out.println("o的下标为：" + list.indexOf("o"));
+	}
 
-		System.out.println("=================截取==================");
-		List<String> subList = list.subList(2, 3);
-		for (int i = 0; i < subList.size(); i++) {
-			System.out.println(subList.get(i));
+	/**
+	 * 内部迭代器
+	 * 
+	 * @author niezhenjie
+	 *
+	 */
+	private class ListItr implements Iterator<E> {
+		private int cursor; // 游标 指向下个元素的位置
+		// 返回最后被读取的元素的下标（其实就是cursor-1） 如果没有元素 则返回-1
+		private int lastRef = -1;
+		// 需要和ArraList里的modcount做比较
+		// 如果读取时(next方法)检查到（checkExpectedModCount方法）这两个数不一致 表示应该有其他线程对集合进行了修改
+		// 需要抛异常
+		private int expectedModCoun = modCount;
+
+		@Override
+		public boolean hasNext() {
+			return cursor != size;
 		}
 
-		/*	list.add(2, "j");
-		System.out.println("============================");
-		ArrayList<String> list2 = new ArrayList<String>();
-		list2.add("1");
-		list2.add("2");
-		list2.add("3");
-		list.addAll(list2);
-		list2.add("5");
-		for (int i = 0; i < list.size(); i++) {
-			System.out.println(list.get(i));
-		}*/
+		@SuppressWarnings("unchecked")
+		@Override
+		public E next() {
+			checkExpectedModCount();
+			int i = cursor;
+			if (i >= size)
+				throw new NoSuchElementException();
+			// jdk这样写的 不太懂 备忘录模式？？？不像吧
+			Object[] elementDate = ArrayList.this.elementData;
+			if (i >= elementDate.length)
+				throw new ConcurrentModificationException();
+			// 游标向下移动一位
+			cursor = i + 1;
+			return (E) elementDate[lastRef = i];
+		}
+
+		@Override
+		public void remove() {
+			// 在remove之前 指向 取（next()）一次 这样lastRef就会指向当前取的那个数 remove掉就可以了
+			if (lastRef < 0)
+				throw new IllegalStateException();
+			checkExpectedModCount();
+			try { // 其实不是很懂这里为什么需要捕抓异常呢？？？
+				ArrayList.this.remove(lastRef);
+				// 将游标指向当前lastRef处（以为在next时last在cursor的前一位）
+				cursor = lastRef;
+				lastRef = lastRef - 1;
+				expectedModCoun = modCount;
+			} catch (IndexOutOfBoundsException e) {
+				throw new ConcurrentModificationException();
+			}
+
+		}
+
+		private final void checkExpectedModCount() {
+			// expectedModCoun的值为获取迭代器时的那个值 在此之后 任何对集合的修改都会使modCount发生变化 导致两者不一致
+			// 最终跑出异常
+			if (expectedModCoun != modCount)
+				throw new ConcurrentModificationException();
+		}
 
 	}
 }
