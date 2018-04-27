@@ -198,7 +198,7 @@ public class ArrayList<E> implements List<E>, Serializable {
 		int moveNum = size - i - 1;
 		if (moveNum > 0) // 如果删除的是最后一个 没必要做下步操作
 			System.arraycopy(elementData, i + 1, elementData, i, moveNum);
-		elementData[--size] = null;
+		elementData[--size] = null; // 利于gc回收
 		modCount++;
 		return old;
 	}
@@ -285,10 +285,58 @@ public class ArrayList<E> implements List<E>, Serializable {
 					+ " toIndex=>" + toIndex);
 	}
 
+	/**
+	 * 其实就是求两个集合的交集
+	 */
 	@Override
 	public boolean retainAll(Collection<?> c) {
-		// TODO Auto-generated method stub
-		return false;
+		/*
+			这是我的方法 不可行  因为每次remove后 都会改变数组的大小 所以当i的值大于实际数组的大小时 就会抛异常
+		Object[] elementData = this.elementData; // 对象 引用赋值
+		boolean modified = false;
+		int temp = 0;
+		try {
+			for (int i = 0, len = size; i < len; i++) {
+				temp++;
+				if (!c.contains(elementData[i])) {
+					remove(elementData[i]);
+					modified = true;
+				}
+			}
+		} catch (Exception e) {
+			System.out.println(elementData[temp]);
+			System.out.println("下标 " +temp);
+		}
+
+		return modified;*/
+
+		// 以下是jdk的实现方法
+		// 对象 引用赋值 注意 一切对elementData的操作都会影响this.elementData
+		Object[] elementData = this.elementData;
+		boolean modified = false;
+		int r = 0, w = 0;
+		try {
+			for (; r < size; r++) {
+				if (c.contains(elementData[r])) {
+					elementData[w++] = elementData[r]; // 直接根据数组下标操作数据 简单粗暴
+				}
+			}
+		} finally { // 确保不管有没有异常 都要进入这里
+			if (r != size) { // 这是因为出现了异常 才会导致r ！= size 否则的话 r一定等于size
+				// 将异常处往后的元素直接拼接到elementData w位置后面
+				System.arraycopy(elementData, r, elementData, w, size - r);
+			}
+			if (w != size) { // 表示c集合存在元素和this.elementData的元素不一致
+				// 将w后面的元素全部设为null
+				// 利于gc回收最终this.elementData的值就是elementData从0-w的元素
+				for (int i = w; i < size; i++)
+					elementData[i] = null;
+				modified = true;
+				modCount = size - w; // 将size-w个元素设为null 即进行了size-w此操作
+				size = w;
+			}
+		}
+		return modified;
 	}
 
 	@Override
@@ -412,14 +460,24 @@ public class ArrayList<E> implements List<E>, Serializable {
 				it.remove();
 			}
 			System.out.println(list.size());*/
-		java.util.ArrayList<String> arr = new java.util.ArrayList<String>();
-		arr.add("1");
-		arr.add("2");
-		arr.add("3");
-		Iterator<String> iterator = arr.iterator();
-		while (iterator.hasNext()) {
-			iterator.remove();
+		ArrayList<String> arr = new ArrayList<String>();
+		arr.add("a");
+		arr.add("b");
+		arr.add("c");
+		arr.add("d");
+		/*	Iterator<String> iterator = arr.iterator();
+			while (iterator.hasNext()) {
+				iterator.remove();
+			}*/
+		List<String> retain = new ArrayList<String>();
+		retain.add("a");
+		retain.add("2");
+		retain.add("g");
+		arr.retainAll(retain);
+		for (int i = 0; i < arr.size(); i++) {
+			System.out.println(arr.get(i));
 		}
+
 	}
 
 	/**
