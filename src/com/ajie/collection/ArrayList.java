@@ -7,6 +7,8 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import javax.lang.model.util.Elements;
+
 /**
  * @author niezhenjie
  * 
@@ -205,6 +207,11 @@ public class ArrayList<E> implements List<E>, Serializable {
 
 	/**
 	 * 注释了的是我的做法 没有考虑到null的情况 虽然也可以 但是总感觉不好 也说不上哪里不好
+	 * 
+	 * 回答上述问题 大错特错啦 傻缺了吧 对象对比还用== 脑袋被驴踢了吗
+	 * 
+	 * 如果o为null的情况不分开处理 那么在调用对比equal 不管是o.equal还是elementData[i].equal都会出错
+	 * 以为o是null 而elementData[i]有可能是null
 	 */
 	@Override
 	public boolean remove(Object o) {
@@ -226,7 +233,8 @@ public class ArrayList<E> implements List<E>, Serializable {
 			}
 		} else {
 			for (int i = 0; i < size; i++) {
-				if (o == elementData[i]) {
+				/*	if (o == elementData[i]) {  整天想什么呢 这么基础 这么低级的错误都犯*/
+				if (o.equals(elementData[i])) {
 					remove(i);
 					return true;
 				}
@@ -416,6 +424,10 @@ public class ArrayList<E> implements List<E>, Serializable {
 	}
 
 	/**
+	 * 这里的变量有点误导人 因为这里在使用的时候一般是传当前元素个数加上准备添加的元素个数（如add 就是 size+i）所以判断
+	 * minCapacity - elementData.length > 0
+	 * 判断其实就是判断当前数组的空余位置能否还能装进minCapacity个元素 如果可以（即minCapacity -
+	 * elementData.length<0） 就不必要增容
 	 * 
 	 * @param minCapacity
 	 */
