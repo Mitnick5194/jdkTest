@@ -7,8 +7,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import javax.lang.model.util.Elements;
-
 /**
  * @author niezhenjie
  * 

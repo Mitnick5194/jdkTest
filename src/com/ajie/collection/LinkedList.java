@@ -1,5 +1,6 @@
 package com.ajie.collection;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -68,10 +69,10 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 	}
 
 	/**
-	 * 将元素e插入到非空节点n前面
+	 * 将元素e插入到非空节点node前面
 	 * 
 	 * @param e
-	 * @param n
+	 * @param node
 	 */
 	private void linkBefore(E e, Node<E> node) {
 		final Node<E> prev = node.prev;
@@ -87,10 +88,10 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 	}
 
 	/**
-	 * 删除传进来的链表第一个元素 判断f是否为null在使用是做
+	 * 删除传进来的链表第一个元素 判断f是否为null在调用该函数时判断
 	 * 
 	 * @param f
-	 *            链表第一个节点指向的地址
+	 *            链表第一个节点
 	 * @return
 	 */
 	private E unlinkFirst(Node<E> f) {
@@ -123,6 +124,12 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 		return element;
 	}
 
+	/**
+	 * 删除指定的节点
+	 * 
+	 * @param node
+	 * @return
+	 */
 	private E unlink(Node<E> node) {
 		final Node<E> prev = node.prev;
 		final Node<E> next = node.next;
@@ -197,6 +204,12 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 		return node(index).item;
 	}
 
+	/**
+	 * 获取指定下标的节点 所以说链表的查询效率很低 每次查询只能首或尾巴处一个个走 知道走到指定的位置
+	 * 
+	 * @param index
+	 * @return
+	 */
 	public Node<E> node(int index) {
 		checkPositionIndex(index);
 		// 如果下标小于size的一半 从头部开始遍历 速度会快很多 最多遍历 size>>1遍
@@ -223,8 +236,37 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 
 	@Override
 	public boolean add(int i, E e) {
-		// TODO Auto-generated method stub
-		return false;
+		/* not nice and not implement my mine
+		 * if(i == size){
+			addLast(e);
+			return true;
+		}
+		checkPositionIndex(i);
+		Node<E> node = node(i);
+		Node<E> prev= node.prev;
+		Node<E> next = node.next;
+		Node<E> newNode = new Node<E>(null , e , node);
+		if(null == next){
+			last.next = newNode;
+			newNode.prev = last;
+			last = newNode;
+		}else if(null == prev){
+			first.prev = newNode;
+			first  = newNode;
+		}else{
+			newNode.prev = prev;
+			prev.next = newNode;
+		}
+		return true;*/
+		// jdk
+		checkPositionIndex(i);
+		Node<E> node = node(i);
+		if (size == i)
+			linkLast(node.item);
+		else
+			linkBefore(e, node);
+		return true;
+
 	}
 
 	@Override
@@ -233,7 +275,7 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 		return false;
 	}
 
-	/** 
+	/**
 	 * 指定位置插入多元素 算法：
 	 * <p>
 	 * 如果插入位置是链表的尾部 那么 直接将c每个元素转换成节点追加到当前链表
@@ -291,8 +333,11 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 
 	@Override
 	public E remove(int i) {
-		// TODO Auto-generated method stub
-		return null;
+		checkPositionIndex(i);
+		Node<E> node = node(i);
+		E e = unlink(node);
+		return e;
+
 	}
 
 	/**
@@ -311,14 +356,14 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 		// 不管用o.equal还是n.item.equal()都会出错
 		if (null == o) { // null 情况
 			for (Node<E> n = first; null != n.next; n = n.next) {
-				if (null == n.item){
+				if (null == n.item) {
 					unlink(n);
 					return true;
 				}
 			}
 		} else {
 			for (Node<E> n = first; null != n.next; n = n.next) {
-				if (o.equals(n.item)){
+				if (o.equals(n.item)) {
 					unlink(n);
 					return true;
 				}
@@ -329,14 +374,18 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 
 	@Override
 	public boolean removeAll(Collection<?> c) {
-		// TODO Auto-generated method stub
-		return false;
+		Iterator<E> iterator = iterator();
+		while (iterator.hasNext()) {
+			E next = iterator.next();
+			remove(next);
+		}
+		return true;
 	}
 
 	@Override
 	public E update(int i, E e) {
-		// TODO Auto-generated method stub
-		return null;
+		add(i, e);
+		return e;
 	}
 
 	@Override
@@ -346,20 +395,29 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 
 	@Override
 	public boolean containsAll(Collection<?> c) {
-		// TODO Auto-generated method stub
-		return false;
+		for (Object o : c) {
+			if (!contains(o))
+				return false;
+		}
+		return true;
 	}
 
 	@Override
 	public void clear() {
-		// TODO Auto-generated method stub
-
+		for (Node<E> node = first; node != null;) {
+			Node<E> next = node.next;
+			node.prev = null;
+			node.item = null;
+			node.next = null;
+			node = next;
+		}
+		size = 0;
+		modCount++;
 	}
 
 	@Override
 	public boolean isEmpty() {
-		// TODO Auto-generated method stub
-		return false;
+		return size == 0;
 	}
 
 	@Override
@@ -376,20 +434,46 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 
 	@Override
 	public Object[] toArray() {
-		// TODO Auto-generated method stub
-		return null;
+		Object object[] = new Object[size];
+		int index = 0;
+		for (Node<E> node = first; node != null; node = node.next) {
+			object[index++] = node.item;
+		}
+		return object;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T[] toArray(T[] a) {
-		// TODO Auto-generated method stub
-		return null;
+		Object[] array = toArray();
+		if (a.length < size)
+			return (T[]) Arrays.copyOf(array, size, a.getClass());
+		System.arraycopy(array, 0, a, 0, size);
+		if(a.length > size){
+			a[size] = null;
+		}
+		return a;
 	}
 
 	@Override
 	public int indexOf(Object o) {
-		// TODO Auto-generated method stub
-		return 0;
+		int index = 0;
+		if (null == o) {
+			for (Node<E> node = first; node != null; node = node.next) {
+				if (null == node.item) {
+					return index;
+				}
+				index++;
+			}
+		} else {
+			for (Node<E> node = first; node != null; node = node.next) {
+				if (o.equals(node.item)) {
+					return index;
+				}
+				index++;
+			}
+		}
+		return -1;
 	}
 
 	private static class Node<E> {
@@ -422,7 +506,10 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 		list.removeFirst();
 		list.removeLast();
 		list.remove("ajie");
-		List<String> otherList = new ArrayList<String>(){
+		list.add(5, "f");
+	//	list.clear();
+		// list.remove(9);
+		List<String> otherList = new ArrayList<String>() {
 			private static final long serialVersionUID = 1L;
 			{
 				add("Kobe");
@@ -431,9 +518,23 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 			}
 		};
 		list.addAll(otherList);
-		list.remove("Kobe");
-		for(int i=0;i<list.size();i++){
+		// list.remove("Kobe");
+		for (int i = 0; i < list.size(); i++) {
 			System.out.println(list.get(i));
+		}
+		
+		System.out.println(list.contains("Kobe"));
+		System.out.println(list.containsAll(otherList));
+		System.out.println("============楚河====================");
+		Object[] array = list.toArray();
+		for(Object o : array){
+			System.out.println(o);
+		}
+		System.out.println("================汉界===================");
+		Integer[] str = new Integer[array.length];
+		Integer[] array2 = list.toArray(str);
+		for(Integer s : array2){
+			System.out.println(s);
 		}
 	}
 }
