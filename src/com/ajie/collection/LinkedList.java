@@ -2,6 +2,7 @@ package com.ajie.collection;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -34,8 +35,7 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 
 	@Override
 	public Iterator<E> iterator() {
-		// TODO Auto-generated method stub
-		return null;
+		return new Itr();
 	}
 
 	@Override
@@ -449,7 +449,7 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 		if (a.length < size)
 			return (T[]) Arrays.copyOf(array, size, a.getClass());
 		System.arraycopy(array, 0, a, 0, size);
-		if(a.length > size){
+		if (a.length > size) {
 			a[size] = null;
 		}
 		return a;
@@ -507,7 +507,7 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 		list.removeLast();
 		list.remove("ajie");
 		list.add(5, "f");
-	//	list.clear();
+		// list.clear();
 		// list.remove(9);
 		List<String> otherList = new ArrayList<String>() {
 			private static final long serialVersionUID = 1L;
@@ -522,19 +522,94 @@ public class LinkedList<E> implements List<E>, java.io.Serializable {
 		for (int i = 0; i < list.size(); i++) {
 			System.out.println(list.get(i));
 		}
-		
+
 		System.out.println(list.contains("Kobe"));
 		System.out.println(list.containsAll(otherList));
 		System.out.println("============楚河====================");
 		Object[] array = list.toArray();
-		for(Object o : array){
+		for (Object o : array) {
 			System.out.println(o);
 		}
 		System.out.println("================汉界===================");
-		Integer[] str = new Integer[array.length];
-		Integer[] array2 = list.toArray(str);
-		for(Integer s : array2){
+		String[] str = new String[array.length];
+		String[] array2 = list.toArray(str);
+		for (String s : array2) {
 			System.out.println(s);
 		}
+		System.out.println("===============子午线===============");
+		Iterator<String> iterator = list.iterator();
+		while (iterator.hasNext()) {
+			String next = iterator.next();
+			if (next.equals("Kobe") || next.equals("o"))
+				iterator.remove();
+			// System.out.println(next);
+		}
+		System.out.println("=================HORIZON==================");
+		Iterator<String> it = list.iterator();
+		while (it.hasNext()) {
+			String next = it.next();
+			System.out.println(next);
+		}
+	}
+
+	private class Itr implements Iterator<E> {
+		private int cursor;
+		private int lastRef = -1;
+		private int expectedModCoun = modCount;
+
+		@Override
+		public boolean hasNext() {
+			return cursor != size;
+		}
+
+		@Override
+		public E next() {
+			checkExpectedModCount();
+			Node<E> node = first;
+			if (null == node)
+				throw new NoSuchElementException();
+			int i = 0;
+			for (; i < cursor; i++) {
+				if (null == first.next)
+					return null;
+				node = node.next;
+			}
+			cursor = i + 1;
+			;
+			lastRef = i;
+			return node.item;
+		}
+
+		@Override
+		public void remove() {
+			if (lastRef < 0)
+				throw new IllegalStateException();
+			checkExpectedModCount();
+			try {
+				LinkedList.this.remove(lastRef);
+				if (lastRef < cursor) // 不明白jdk这里为什么要多加一层判断 防止多线程修改？？本来就是线程不安全
+					lastRef--;
+				// 直接等于-1 在next时会重新赋值 如果只是--的话 那么在不执行next的情况下也有可能可以remove
+				cursor = -1;
+				// 调用了LinkedList.this.remove方法 需要同步一下这两个值
+				expectedModCoun = modCount;
+			} catch (Exception e) {
+				throw new ConcurrentModificationException();
+			}
+		}
+
+		/*public boolean hasPrevious() {
+			return cursor == 0;
+		}
+
+		public E previous() {
+			return null;
+		}*/
+
+		private final void checkExpectedModCount() {
+			if (expectedModCoun != modCount)
+				throw new ConcurrentModificationException();
+		}
+
 	}
 }
