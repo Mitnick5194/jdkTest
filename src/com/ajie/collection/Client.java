@@ -1,6 +1,6 @@
 package com.ajie.collection;
 
-import org.json.JSONObject;
+import java.util.HashMap;
 
 /**
  * @author niezhenjie
@@ -39,7 +39,7 @@ public class Client {
 		System.out.println(obj[0] +"  "+obj[1]);*/
 
 		// test JosnObject
-		String info = "{'name':'1','age':'23','sex':'male'}";
+		/*String info = "{'name':'1','age':'23','sex':'male'}";
 		JSONObject obj = new JSONObject(info);
 		String name = null;
 		try {
@@ -47,7 +47,16 @@ public class Client {
 		} catch (Exception e) {
 			name = "";
 		}
-		System.out.println(name);
+		System.out.println(name);*/
+		java.util.Map<String , String > map = new HashMap<String , String>();
+		map.put("h", "1");
+		map.put("e", "2");
+		map.put("l", "3");
+		map.put("9", "nine");
+		String ret = map.get(1);
+		String res = map.get(9);
+		System.out.println(ret);
+		System.out.println(res);
 
 	}
 
