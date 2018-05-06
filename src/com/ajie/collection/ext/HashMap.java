@@ -38,11 +38,13 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 	 */
 	public HashMap(int initialCapacity, float loadFactor) {
 		if (initialCapacity < 0)
-			throw new IllegalArgumentException("illegal initail capacity: " + initialCapacity);
+			throw new IllegalArgumentException("illegal initail capacity: "
+					+ initialCapacity);
 		if (initialCapacity > MAXIMUM_CAPACITY)
 			initialCapacity = MAXIMUM_CAPACITY;
 		if (loadFactor <= 0 || Float.isNaN(loadFactor))
-			throw new IllegalArgumentException("illegal load factor: " + loadFactor);
+			throw new IllegalArgumentException("illegal load factor: "
+					+ loadFactor);
 		this.loadFactor = loadFactor;
 		threshold = initialCapacity;
 		// jdk在这里还会调用一个init函数 但是init方法是空的 好像是留给子类覆盖的
@@ -68,8 +70,8 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 	 */
 	public HashMap(Map<? extends K, ? extends V> m) {
 		// 不太明白这里为什么需要+1
-		this(Math.max((int) (m.size() / DEFAULT_LOAD_FACTOR + 1), DEFAULT_INITIAL_CAPACITY),
-				DEFAULT_LOAD_FACTOR);
+		this(Math.max((int) (m.size() / DEFAULT_LOAD_FACTOR + 1),
+				DEFAULT_INITIAL_CAPACITY), DEFAULT_LOAD_FACTOR);
 		inflateTable(threshold); // 增容
 		putAllForCreate(m);
 	}
@@ -82,11 +84,38 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 	private void inflateTable(int toSize) {
 		int capacity = roundUpToPowerOf2(toSize);
 		// 这里的+1也不太明白 既然MAXIMUM_CAPACITY是最大了 为什么还要+1呢？？？？？？？
-		threshold = Math.min((int) (capacity * loadFactor), MAXIMUM_CAPACITY + 1);
+		threshold = Math.min((int) (capacity * loadFactor),
+				MAXIMUM_CAPACITY + 1);
 	}
 
+	/**
+	 * highestOneBit((number - 1) << 1) 向上2的幂 如 9=>16；
+	 * number-1是为了防止number刚好是2的幂次 -1后 位数减1 然后左移 位数仍然不变 如 8-1=111<<1=1110=14
+	 * highestOneBit(14)=8 9-1=1000<<10000=16 highestOneBit(16)=16
+	 * 
+	 * 
+	 * 
+	 */
 	private int roundUpToPowerOf2(int number) {
-		return 0;
+		return number > MAXIMUM_CAPACITY ? MAXIMUM_CAPACITY
+				: number > 1 ? highestOneBit((number - 1) << 1) : 1;
+	}
+
+	/**
+	 * 将i二进制第一位后面的数全都变成0 如：i=9 1001|100=1100|11=1111|0|0|0 = 1111-111 = 1000;
+	 * 
+	 * 
+	 * @param i
+	 * @return
+	 */
+	private int highestOneBit(int i) {
+		i |= i >> 1;
+		i |= i >> 2;
+		// 以为上面经历了右移一位和右移两位 这时候前4个已经是1了 那么可以直接再右移4位了 当然 如果位数不够 那么就变成0 0|1最终也为1
+		i |= i >> 4;
+		i |= i >> 8;
+		i |= i >> 16;
+		return i - (i >>> 1);
 	}
 
 	private void putAllForCreate(Map<? extends K, ? extends V> m) {
@@ -207,7 +236,7 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 
 	private static int roundUpToPowerOf(int number) {
 		// assert number >= 0 : "number must be non-negative";
-		return number >= MAXIMUM_CAPACITY ? MAXIMUM_CAPACITY : (number > 1) ? Integer
-				.highestOneBit((number - 1) << 1) : 1;
+		return number >= MAXIMUM_CAPACITY ? MAXIMUM_CAPACITY
+				: (number > 1) ? Integer.highestOneBit((number - 1) << 1) : 1;
 	}
 }
