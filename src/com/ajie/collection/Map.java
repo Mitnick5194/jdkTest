@@ -58,7 +58,7 @@ public interface Map<K, V> {
 	 * @param value
 	 * @return 操作是否成功
 	 */
-	boolean put(K key, V value);
+	V put(K key, V value);
 
 	/**
 	 * 
@@ -93,6 +93,12 @@ public interface Map<K, V> {
 	 * @return
 	 */
 	Collection<V> values();
+
+	/**
+	 * 
+	 * @return
+	 */
+	Set<Map.Entry<K, V>> entrySet();
 
 	/**
 	 * 重写equal方法
