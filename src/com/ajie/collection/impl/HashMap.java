@@ -13,9 +13,14 @@ import com.ajie.collection.Map;
  * 链表是从头部插入 头部entry的next指针指向原来的链表的头entry 直接从头部插入的好处有：链表不能通过下标索引直接找到位置 如果要从
  * 后面添加的话 那么每次添加都值能从链表头一个一个next知道链表尾 这样效率太低了 特别是链表很长的时候 所以在头部添加效率会高很多
  * 
- * qishibushiyongmo yong h& length-1; length-1keyi quebao -1 shiyinweixiabiao ru
- * length=16 -1=1111 renheshu & 1111zuida jiushi 1111=15 suoyi xiabiao zuida wei
- * 15
+ * 注意 不同的key计算出来的hashcode有可能一样 一样的hashcode转换成index后一定一样
+ * 而不一样的hashcode转换成index也有可能一样 所以在 数组表格中 同一项的链表hashcode不一定一样 所以在entry需要保存hash的值
+ * 
+ * capacity始终是2的幂次 这样做是有利于在计算hashcode后计算对应的下标 并且这样做有利于下标的均匀分配（不会使数组某个元素的链表很长
+ * 某些元素一个值都没有）
+ * 
+ * 其实不是用模 用 h& length-1; length-1 可以确保 是数组的下标 如： length=16 -1=1111 任何数 &
+ * 1111最大就是 1111=15 即下标最大为 15
  * 
  * @author niezhenjie
  * 
@@ -29,7 +34,7 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 	static final int MAXIMUM_CAPACITY = 1 << 30;
 	// 因为这个是静态的 所以需要使用?? 如果使用KV会报错 因为KV并非静态
 	static final Entry<?, ?>[] EMPTY_TABLE = {};
-	/** 连续内存的列表 */
+	/** 连续内存的数组列表 */
 	@SuppressWarnings("unchecked")
 	transient Entry<K, V>[] table = (Entry<K, V>[]) EMPTY_TABLE;
 	/** 默认装载因子 当容量元素的个数超过了 容量（capacity）与装载因子的乘积 就会进行扩容 */
@@ -89,12 +94,13 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 	}
 
 	/**
-	 * 增加table的容量 注意 为了方便 toSize最终增大的容量是2的幂数 如toSize=3最终是4 9==>16....
+	 * 增加table的容量 注意 为了方便，toSize最终增大的容量是2的幂数 如toSize=3最终是4 9==>16.... 即
+	 * roundUpToPowerOf2能确保返回一定是2的幂次 这样做是为了使计算hashmap对应的下标能得到更均匀的分布
 	 * 
 	 * @param toSize
 	 */
 	private void inflateTable(int toSize) {
-		int capacity = roundUpToPowerOf2(toSize);
+		int capacity = roundUpToPowerOf2(toSize); // roundUpToPowerOf2能确保capacity一定是2的幂次
 		// 这里的+1也不太明白 既然MAXIMUM_CAPACITY是最大了 为什么还要+1呢？？？？？？？
 		threshold = Math.min((int) (capacity * loadFactor), MAXIMUM_CAPACITY + 1);
 	}
@@ -159,6 +165,14 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 		createEntry(key, value, hash, i);
 	}
 
+	/**
+	 * 创建一个entry实体 注意 该方法并不会导致table增容
+	 * 
+	 * @param key
+	 * @param value
+	 * @param hash
+	 * @param i
+	 */
 	private void createEntry(K key, V value, int hash, int i) {
 		// 根据下标取得对应的链表
 		Entry<K, V> entry = table[i];
@@ -212,18 +226,44 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 
 	@Override
 	public V put(K key, V value) {
+		if (table == EMPTY_TABLE)
+			// 其实我不明白 jdk为什么在下面的方法传入的不是DEFAULT_INITIAL_CAPACITY 而是threshold
+			// 虽然在初始化时或这说在没有调用inflateTable时
+			// threshold的值确实等于DEFAULT_INITIAL_CAPACITY 但是这样做我感觉不太好 容易造成混淆
+			inflateTable(DEFAULT_INITIAL_CAPACITY);
 		if (null == key)
 			return putForNullKey(value);
 		int hash = hash(key);
 		int index = indexFor(hash, table.length);
 		for (Entry<K, V> e = table[index]; e != null; e = e.next) {
+			// 下面的判断是判断传入的key是否已经存在了 hash值一样 不一定就是形同的key 但是相同呢的key hash一定一样 所以在
+			// 判断hash相等的同时 也要满足key相等
 			if (hash == e.hash && (key == e.key || (null != key && key.equals(e.key)))) {
 				V old = e.value;
 				e.value = value;
-				return old;
+				return old; // 返回key原来对应的值
 			}
 		}
-		return null;
+		modCount++;
+		addEntry(key, value, hash, index);
+		return null; // 新添加并没有什么东西可返回
+	}
+
+	/**
+	 * 这个方法会导致数组表格增容
+	 * 
+	 * @param key
+	 * @param value
+	 * @param hash
+	 * @param index
+	 */
+	private void addEntry(K key, V value, int hash, int index) {
+		// 只有size大于阈值 并且table[index]存在才做增容操作
+		// 其实我不太明白 为什么需要判断null != table[index] 难道null != table[index]不存在就不能做增容了吗
+		if ((size >= threshold) && (null != table[index])) {
+
+		}
+		createEntry(key, value, hash, index);
 	}
 
 	private V putForNullKey(V value) {
