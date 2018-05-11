@@ -193,7 +193,7 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 	}
 
 	final private int indexFor(int hash, int length) {
-		return hash & (length - 1); // zheyang xiabiao zuida zhinengshi length-1
+		return hash & (length - 1); // 这样下标最大只能是length-1
 	}
 
 	@Override
@@ -261,12 +261,31 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 		// 只有size大于阈值 并且table[index]存在才做增容操作
 		// 其实我不太明白 为什么需要判断null != table[index] 难道null != table[index]不存在就不能做增容了吗
 		if ((size >= threshold) && (null != table[index])) {
-
+			resize(size*2);
+			hash = null == key ? 0 : hash(key);
+			index = indexFor(hash, table.length);
 		}
 		createEntry(key, value, hash, index);
 	}
+	
+	private void resize(int newCapacity){
+		
+	}
 
+	/**
+	 * key为null的情况 注意 key为null只能添加到数组table[0]位置上的链表
+	 * 
+	 * @param value
+	 * @return
+	 */
 	private V putForNullKey(V value) {
+		for(Entry<K,V> e = table[0] ; e != null; e = e.next){
+			if(null == e.key){
+				V old = e.value;
+				e.value = value;
+				return old;
+			}
+		}
 		return null;
 	}
 

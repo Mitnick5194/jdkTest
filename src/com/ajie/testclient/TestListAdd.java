@@ -32,7 +32,7 @@ public class TestListAdd {
 				add("e");
 			}
 		};
-		boolean contains = list.containsAll(list2); //抛异常
+		boolean contains = list.containsAll(list2);
 		System.out.println(contains);
 		
 	}
