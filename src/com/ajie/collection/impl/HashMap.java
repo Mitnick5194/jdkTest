@@ -181,6 +181,92 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 		size++;
 	}
 
+	@Override
+	public V put(K key, V value) {
+		if (table == EMPTY_TABLE)
+			// 其实我不明白 jdk为什么在下面的方法传入的不是DEFAULT_INITIAL_CAPACITY 而是threshold
+			// 虽然在初始化时或这说在没有调用inflateTable时
+			// threshold的值确实等于DEFAULT_INITIAL_CAPACITY 但是这样做我感觉不太好 容易造成混淆
+			inflateTable(DEFAULT_INITIAL_CAPACITY);
+		if (null == key)
+			return putForNullKey(value);
+		int hash = hash(key);
+		int index = indexFor(hash, table.length);
+		for (Entry<K, V> e = table[index]; e != null; e = e.next) {
+			// 下面的判断是判断传入的key是否已经存在了 hash值一样 不一定就是形同的key 但是相同呢的key hash一定一样 所以在
+			// 判断hash相等的同时 也要满足key相等
+			if (hash == e.hash && (key == e.key || (null != key && key.equals(e.key)))) {
+				V old = e.value;
+				e.value = value;
+				return old; // 返回key原来对应的值
+			}
+		}
+		modCount++;
+		addEntry(key, value, hash, index);
+		return null; // 新添加并没有什么东西可返回
+	}
+
+	/**
+	 * 这个方法会导致数组表格增容
+	 * 
+	 * @param key
+	 * @param value
+	 * @param hash
+	 * @param index
+	 */
+	private void addEntry(K key, V value, int hash, int index) {
+		// 只有size大于阈值 并且table[index]存在才做增容操作
+		// 其实我不太明白 为什么需要判断null != table[index] 难道null != table[index]不存在就不能做增容了吗
+		// 回答上面的疑问：只有size大于阈值threshold时 并且由key计算出的下标处有元素了 即出现了hash冲突了 才会增容
+		// 如果不出现hash冲突 即下标处为空 直接插入就行了 不用增容 如果size==length时
+		// 那么table[index]一定不会出现null的情况 所以会进入if
+		if ((size >= threshold) && (null != table[index])) {
+			resize(table.length * 2);
+			// 不明白这里为什么还要再求一次hash 传进来的hash不是已经是key的hash运算结果了吗 这里还要再求一次 why???
+			hash = null == key ? 0 : hash(key);
+			// 这里重新计算还能理解 因为table的大小变了 所以下标也随着变化
+			index = indexFor(hash, table.length);
+		}
+		createEntry(key, value, hash, index);
+	}
+
+	private void resize(int newCapacity) {
+		Entry<K, V>[] oldTable = table;
+		int oldCapacity = oldTable.length;
+		if (oldCapacity > MAXIMUM_CAPACITY) {
+			// 这里也不是很明白 为什么要吧threadshold设为Integer.MAX_VALUE
+			// 难道是这样size就不会大于Integer.MAX_VALUE 然后就不会进入再进入这个方法了？ 我猜是这样子
+			threshold = Integer.MAX_VALUE;
+			return;
+		}
+		// 泛型不能定义数组？？ Entry<K,V>[] newTable = new Entry<K,V>[newCapacity]; 会报错
+		Entry[] newTable = new Entry[newCapacity];
+
+	}
+
+	/**
+	 * key为null的情况 注意 key为null只能添加到数组table[0]位置上的链表
+	 * 
+	 * @param value
+	 * @return
+	 */
+	private V putForNullKey(V value) {
+		for (Entry<K, V> e = table[0]; e != null; e = e.next) {
+			if (null == e.key) {
+				V old = e.value;
+				e.value = value;
+				return old;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public boolean putAll(Map<? extends K, ? extends V> map) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 	final private int hash(Object k) {
 		int h = hashseed;
 		/*	if(0!=h && k instanceof String){
@@ -222,77 +308,6 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 	public V get(Object key) {
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	@Override
-	public V put(K key, V value) {
-		if (table == EMPTY_TABLE)
-			// 其实我不明白 jdk为什么在下面的方法传入的不是DEFAULT_INITIAL_CAPACITY 而是threshold
-			// 虽然在初始化时或这说在没有调用inflateTable时
-			// threshold的值确实等于DEFAULT_INITIAL_CAPACITY 但是这样做我感觉不太好 容易造成混淆
-			inflateTable(DEFAULT_INITIAL_CAPACITY);
-		if (null == key)
-			return putForNullKey(value);
-		int hash = hash(key);
-		int index = indexFor(hash, table.length);
-		for (Entry<K, V> e = table[index]; e != null; e = e.next) {
-			// 下面的判断是判断传入的key是否已经存在了 hash值一样 不一定就是形同的key 但是相同呢的key hash一定一样 所以在
-			// 判断hash相等的同时 也要满足key相等
-			if (hash == e.hash && (key == e.key || (null != key && key.equals(e.key)))) {
-				V old = e.value;
-				e.value = value;
-				return old; // 返回key原来对应的值
-			}
-		}
-		modCount++;
-		addEntry(key, value, hash, index);
-		return null; // 新添加并没有什么东西可返回
-	}
-
-	/**
-	 * 这个方法会导致数组表格增容
-	 * 
-	 * @param key
-	 * @param value
-	 * @param hash
-	 * @param index
-	 */
-	private void addEntry(K key, V value, int hash, int index) {
-		// 只有size大于阈值 并且table[index]存在才做增容操作
-		// 其实我不太明白 为什么需要判断null != table[index] 难道null != table[index]不存在就不能做增容了吗
-		if ((size >= threshold) && (null != table[index])) {
-			resize(size*2);
-			hash = null == key ? 0 : hash(key);
-			index = indexFor(hash, table.length);
-		}
-		createEntry(key, value, hash, index);
-	}
-	
-	private void resize(int newCapacity){
-		
-	}
-
-	/**
-	 * key为null的情况 注意 key为null只能添加到数组table[0]位置上的链表
-	 * 
-	 * @param value
-	 * @return
-	 */
-	private V putForNullKey(V value) {
-		for(Entry<K,V> e = table[0] ; e != null; e = e.next){
-			if(null == e.key){
-				V old = e.value;
-				e.value = value;
-				return old;
-			}
-		}
-		return null;
-	}
-
-	@Override
-	public boolean putAll(Map<? extends K, ? extends V> map) {
-		// TODO Auto-generated method stub
-		return false;
 	}
 
 	@Override
