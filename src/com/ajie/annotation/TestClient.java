@@ -14,7 +14,8 @@ public class TestClient {
 		// 测试 检测某个类下面是否有使用指定的注解 如果使用了 注解里的值分别是什么
 		Class<TestClient> clazz = TestClient.class; // 需要检测类
 		for (Method m : clazz.getMethods()) { // 遍历改类的所有方法
-			// 调用方法的getAnnotation 传入需要检测的注解类型
+			// 调用方法的getAnnotation 传入需要检测的注解类型 也可以使用
+			// m.isAnnotationPresent(MyAnnotation.class) 返回true||false
 			MyAnnotation annotation = m.getAnnotation(MyAnnotation.class);
 			// 如果不为空 则表示该方法有使用指定的注解类型
 			if (null != annotation) {
