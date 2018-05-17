@@ -2,12 +2,14 @@ package com.ajie.collection.impl;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
 
 import com.ajie.collection.Map;
 
 /**
- * HashMap的数据结构： 一个连续内存的表格，每一项都存放这一个链表的首地址 存放的对象的key通过hash运算得出一个hash值，
+ * HashMap链表部分的链表是一个单向链表 只能获取下一个Entry不能获取上一个Entry HashMap的数据结构：
+ * 一个连续内存的表格，每一项都存放这一个链表的首地址 存放的对象的key通过hash运算得出一个hash值，
  * 再模上表格的长度（这样得出的值一定是0<值<表格长度）key通过hash运算在模上表格长度后得出的值就是表格的下标（或位置）
  * 如果两个不同的key通过运算得出的表格下标是一样的 那么就将改对象（封装好的entry）放入表格的位置 将原来的链表挂载新entry上 即
  * 链表是从头部插入 头部entry的next指针指向原来的链表的头entry 直接从头部插入的好处有：链表不能通过下标索引直接找到位置 如果要从
@@ -99,10 +101,12 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 	 * 
 	 * @param toSize
 	 */
+	@SuppressWarnings("unchecked")
 	private void inflateTable(int toSize) {
 		int capacity = roundUpToPowerOf2(toSize); // roundUpToPowerOf2能确保capacity一定是2的幂次
 		// 这里的+1也不太明白 既然MAXIMUM_CAPACITY是最大了 为什么还要+1呢？？？？？？？
 		threshold = Math.min((int) (capacity * loadFactor), MAXIMUM_CAPACITY + 1);
+		table = new Entry[capacity];
 	}
 
 	/**
@@ -155,7 +159,6 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 		int i = indexFor(hash, hash); // 根据hash值计算出下标的位置
 		// 遍历计算出的下标位置的链表
 		for (Entry<K, V> e = table[i]; e != null; e = e.next) {
-			Object k;
 			// hash相等（hash相等 那么key在表格的位置一定一样）并且key有在链表里找到 直接将原本key的值覆盖
 			if (e.hash == hash && (key == e.key || (null != e.key && key.equals(e.key)))) {
 				e.value = value;
@@ -193,7 +196,7 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 		int hash = hash(key);
 		int index = indexFor(hash, table.length);
 		for (Entry<K, V> e = table[index]; e != null; e = e.next) {
-			// 下面的判断是判断传入的key是否已经存在了 hash值一样 不一定就是形同的key 但是相同呢的key hash一定一样 所以在
+			// 下面的判断是判断传入的key是否已经存在了; hash值一样 不一定就是形同的key 但是相同呢的key hash一定一样 所以在
 			// 判断hash相等的同时 也要满足key相等
 			if (hash == e.hash && (key == e.key || (null != key && key.equals(e.key)))) {
 				V old = e.value;
@@ -207,7 +210,7 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 	}
 
 	/**
-	 * 这个方法会导致数组表格增容
+	 * 这个方法会导致数组表格增容(调用了resize方法)
 	 * 
 	 * @param key
 	 * @param value
@@ -230,6 +233,7 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 		createEntry(key, value, hash, index);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void resize(int newCapacity) {
 		Entry<K, V>[] oldTable = table;
 		int oldCapacity = oldTable.length;
@@ -241,7 +245,50 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 		}
 		// 泛型不能定义数组？？ Entry<K,V>[] newTable = new Entry<K,V>[newCapacity]; 会报错
 		Entry[] newTable = new Entry[newCapacity];
+		transfer(newTable, false);
+		table = newTable;
+		threshold = (int) Math.min(newCapacity * loadFactor, MAXIMUM_CAPACITY + 1);
+	}
 
+	/**
+	 * 将当前的table数组的数据赋值到新的数组newTable
+	 * 
+	 * @param newTable
+	 * @param rehash
+	 *            是否需要重新计算hash值
+	 */
+	private void transfer(Entry<K, V>[] newTable, boolean rehash) {
+		/* 我的错误写法 因为每个entry的下标是与key和table的长度有关 所以当长度变化了 那么 key计算出来的下标也会变化
+		for(int i=0;i<table.length;i++){
+			 newTable[i] = table[i];
+		}*/
+		/*	i尝试用下面的写法  没有完全写完就被宣布失败了
+		 	int newlength = newTable.length;
+			for (Entry<K, V> e : table) {
+				Entry<K, V> next = e.next;
+				do{
+					K key = e.key;
+					int hash = e.hash;
+					if(rehash)
+						hash = null == key ? 0: hash(key);
+					int index = indexFor(hash, newlength);
+					Entry<K,V> entry = newTable[index];
+				
+				}while(null != next);
+			}*/
+		// 以下参看jdk
+		int newLength = newTable.length;
+		for (Entry<K, V> e : table) {
+			while (null != e) {
+				Entry<K, V> next = e.next;
+				if (rehash)
+					e.hash = null == e.key ? 0 : hash(e.key);
+				int index = indexFor(e.hash, newLength);
+				e.next = newTable[index];
+				newTable[index] = e;
+				e = next;
+			}
+		}
 	}
 
 	/**
@@ -261,10 +308,48 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 		return null;
 	}
 
+	/**
+	 * 获取key为null的值
+	 * 
+	 * @return
+	 */
+	private V getForNullKey() {
+		if (0 == size)
+			return null;
+		for (Entry<K, V> e = table[0]; e != null; e = e.next) {
+			if (null == e.key)
+				return e.value;
+		}
+		return null;
+	}
+
 	@Override
 	public boolean putAll(Map<? extends K, ? extends V> map) {
-		// TODO Auto-generated method stub
-		return false;
+		/* 我的做法忽略了一个细节 就是每次put的时候modCount都会+1 最终modCount变化了map.size()次 显然不能这样
+		 * 而且还有个问题 就是如果map很大的话 可能在put的时候需要多次增容 增容带来的性能影响是很大的 应该为一次增容
+		 boolean modified = false;
+		Set<? extends K> keys = map.keySet();
+		Iterator<? extends K> it = keys.iterator();
+		while (it.hasNext()) {
+			K key = it.next();
+			V value = map.get(key);
+			put(key, value);
+			modified = true;
+		}
+		return modified;*/
+		// 以下参考jdk
+		boolean modified = false;
+		int addSize = map.size();
+		if (0 == addSize)
+			return modified;
+		// 其实我不太明白为什么需要做这步
+		if (EMPTY_TABLE == table)
+			// EMPTY_TABLE == table时threshold应该是和初始容量一样的
+			// 所以如果addSize*loadFactor不大于初始容量 那么直接扩容至初始容量
+			// 最终inflateTable也会增容至threshold*loadFactor
+			inflateTable((int) Math.max(addSize * loadFactor, threshold));
+		return modified;
+
 	}
 
 	final private int hash(Object k) {
@@ -306,14 +391,66 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 
 	@Override
 	public V get(Object key) {
-		// TODO Auto-generated method stub
+		if (null == key)
+			return getForNullKey();
+		Entry<K, V> entry = getEntry(key);
+		return null == entry ? null : entry.value;
+	}
+
+	/**
+	 * 根据key获取对应的Entry
+	 * 
+	 * @param key
+	 * @return
+	 */
+	final Entry<K, V> getEntry(Object key) {
+		int hash = null == key ? 0 : hash(key);
+		int index = indexFor(hash, table.length);
+		for (Entry<K, V> e = table[index]; e != null; e = e.next)
+			if (hash == e.hash && (key == e.key || (null != key && key.equals(e.key))))
+				return e;
 		return null;
 	}
 
 	@Override
-	public boolean remove(K key) {
-		// TODO Auto-generated method stub
-		return false;
+	public V remove(K key) {
+		Entry<K, V> entry = removeEntryForKey(key);
+		return null == entry ? null : entry.value;
+	}
+
+	/**
+	 * 因为HashMap链表部分是单链表 所以这里很巧妙的自定义了一个prev节点 当第一次进入是prev就是和当前操作的e一样
+	 * 第二次的时候就把e赋值给prev 在吧next赋值给e 这样第二次prev依然指向第一个 而e不在等于prev了
+	 * 这时候已经形成了可以通过e获取前节点和后节点了
+	 * 
+	 * @param key
+	 * @return
+	 */
+	private Entry<K, V> removeEntryForKey(Object key) {
+		if (0 == size)
+			return null;
+		int hash = null == key ? 0 : hash(key);
+		int index = indexFor(hash, table.length);
+		Entry<K, V> prev = table[index];
+		Entry<K, V> e = prev;// 一开始e==prev后面e==prev.next
+		// 如果e==null 表示有key计算出来的下标在表格里根本没有值 所以就不用进入一下操作了 直接结束return null
+		while (null != e) {
+			Entry<K, V> next = e.next;
+			if (hash == e.hash && (key == e.key || (null != key && key.equals(e.key)))) {
+				// 匹配到了
+				modCount++;
+				size--;
+				// prev==e只有是第一次进来时满足 表示表格的第一个元素就是需要找的元素
+				if (prev == e)
+					table[index] = next;
+				else
+					prev.next = next;
+				return e;
+			}
+			prev = e;
+			e = next;
+		}
+		return null;
 	}
 
 	@Override
@@ -392,22 +529,25 @@ public class HashMap<K, V> implements Map<K, V>, Serializable {
 	}
 
 	public static void main(String[] args) {
-		int bigNum = 0xFFFFFFF + 1;
-		System.out.println(bigNum);
-		int ret = HashMap.roundUpToPowerOf(9);
-		System.out.println(ret);
-		System.out.println(Integer.highestOneBit(bigNum));
-		java.util.HashMap<String, String> map = new java.util.HashMap<String, String>();
-		map.put("price", "24");
-		map.put("orderId", "axdf12304");
-		map.put("passenger	", "LockLee");
-		java.util.HashMap<String, String> m = new java.util.HashMap<String, String>(map);
-	}
-
-	private static int roundUpToPowerOf(int number) {
-		// assert number >= 0 : "number must be non-negative";
-		return number >= MAXIMUM_CAPACITY ? MAXIMUM_CAPACITY : (number > 1) ? Integer
-				.highestOneBit((number - 1) << 1) : 1;
+		/*	int bigNum = 0xFFFFFFF + 1;
+			System.out.println(bigNum);
+			int ret = HashMap.roundUpToPowerOf(9);
+			System.out.println(ret);
+			System.out.println(Integer.highestOneBit(bigNum));
+			java.util.HashMap<String, String> map = new java.util.HashMap<String, String>();
+			map.put("price", "24");
+			map.put("orderId", "axdf12304");
+			map.put("passenger	", "LockLee");*/
+		// java.util.HashMap<String, String> m = new java.util.HashMap<String,
+		// String>(map);
+		HashMap<String, String> map = new HashMap<String, String>();
+		map.put("name", "ajie");
+		map.put("sex", "male");
+		System.out.println(map.get("name"));
+		System.out.println(map.get("sex"));
+		String remove = map.remove("name");
+		System.out.println("删除元素:" + remove);
+		System.out.println(map.get("name"));
 	}
 
 }

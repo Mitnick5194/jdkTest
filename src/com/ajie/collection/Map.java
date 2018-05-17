@@ -73,7 +73,7 @@ public interface Map<K, V> {
 	 * @param key
 	 * @return 是否成功删除
 	 */
-	boolean remove(K key);
+	V remove(K key);
 
 	/**
 	 * 清空Map 此时并不会变成 null 只是size=0 isEmpty返回true
