@@ -26,7 +26,7 @@ public class MainFunc {
 			}
 
 		}*/
-		List<Parent> list = new ArrayList<Parent>();
+	/*	List<Parent> list = new ArrayList<Parent>();
 		UserBean u1 = new UserBean(24 , "男");
 		UserBean u2 = new UserBean(23 , "女");
 		Parent p = new Parent();
@@ -34,7 +34,9 @@ public class MainFunc {
 		list.add(u1);
 		list.add(u2);
 		list.add(p);
-		System.out.println(list.size());
+		System.out.println(list.size());*/
+		System.out.println(MainFunc.class.getPackage().getImplementationVersion());
+		
 		
 	}
 }
