@@ -1,9 +1,5 @@
 package com.ajie.testclient;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 /**
  * @author niezhenjie
  * 
@@ -26,17 +22,39 @@ public class MainFunc {
 			}
 
 		}*/
-	/*	List<Parent> list = new ArrayList<Parent>();
-		UserBean u1 = new UserBean(24 , "男");
-		UserBean u2 = new UserBean(23 , "女");
-		Parent p = new Parent();
-		p.setName("ajie");
-		list.add(u1);
-		list.add(u2);
-		list.add(p);
-		System.out.println(list.size());*/
-		System.out.println(MainFunc.class.getPackage().getImplementationVersion());
+		/*	List<Parent> list = new ArrayList<Parent>();
+			UserBean u1 = new UserBean(24 , "男");
+			UserBean u2 = new UserBean(23 , "女");
+			Parent p = new Parent();
+			p.setName("ajie");
+			list.add(u1);
+			list.add(u2);
+			list.add(p);
+			System.out.println(list.size());*/
+		// System.out.println(MainFunc.class.getPackage().getImplementationVersion());
+		// String i = "0xa";
+		// System.out.println(Integer.toHexString(i));
+		/*	String url = "http://l-drt.navboy.com:5670/drt/baoche/b.j;218";
+			int idx = url.lastIndexOf(";");
+			String ret =  url.substring(0, idx);
+			String serviceId = url.substring(idx+1);
+			System.out.println(ret+ "  "+serviceId);*/
+
+		/*System.out.println(Integer.toHexString(65));*/
+
+		/*StringBuilder sb = new StringBuilder();
+		sb.append("hello");
+		sb.append("world");
+		System.out.println(sb.length());*/
+		/*System.out.println(System.getProperty("maven_home"));
+		System.out.println(System.getenv("PATH"));*/
+		System.setProperty("my_user_home", "/home/mitnick");
 		
-		
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				System.out.println(System.getProperty("my_user_home"));
+			}
+		}).start();
 	}
 }

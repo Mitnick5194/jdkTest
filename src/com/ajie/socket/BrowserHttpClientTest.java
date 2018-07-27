@@ -19,12 +19,12 @@ public class BrowserHttpClientTest {
 	public static void main(String[] args) {
 		Socket s = null;
 		try {
-			s = new Socket("192.168.11.105", 8080);
+			s = new Socket("192.168.0.50", 8081);
 			PrintStream out = new PrintStream(s.getOutputStream());
-			out.println("GET /wx/control/param.jspx HTTP/1.1");
+			out.println("GET /drt/journeys.jspx HTTP/1.1");
 			out.println("Host: localhost:8080");
 			out.println("Connection: Close");
-			out.println("Cookie:_ga=GA1.2.991360164.1518405628; omni-ssss=c21a501060163763cd764003a");
+			out.println("Cookie:omni-ssss=c21ae7fc01638a7c6f5a003a");
 			out.println();
 			InputStream in = s.getInputStream();
 			byte[] buf = new byte[1024];

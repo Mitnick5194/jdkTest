@@ -2,7 +2,6 @@ package com.ajie.collection.impl;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Set;
 
 import com.ajie.collection.Map;

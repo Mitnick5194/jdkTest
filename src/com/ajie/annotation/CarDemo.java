@@ -32,8 +32,8 @@ public class CarDemo {
 	}
 
 	public String getOtherCar() {
-		/*if (null == otherCar)
-			return null;*/
+		if (null == otherCar)
+			return null;
 		return "品牌：" + otherCar.getName() + " 价格：" + otherCar.getPrice();
 	}
 
