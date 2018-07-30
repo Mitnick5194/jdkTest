@@ -48,13 +48,22 @@ public class MainFunc {
 		System.out.println(sb.length());*/
 		/*System.out.println(System.getProperty("maven_home"));
 		System.out.println(System.getenv("PATH"));*/
-		System.setProperty("my_user_home", "/home/mitnick");
+		/*System.setProperty("my_user_home", "/home/mitnick");
 		
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				System.out.println(System.getProperty("my_user_home"));
 			}
-		}).start();
+		}).start();*/
+
+		String[] strs = new String[3];
+		strs[0] = "a";
+		strs[1] = "b";
+		strs[2] = "c";
+		Object[] str2 = new Object[2];
+		str2[0] = strs;
+		str2[1] = "a";
+		System.out.println(str2[1]);
 	}
 }
